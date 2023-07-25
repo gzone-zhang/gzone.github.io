@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title>SpringMVC数据绑定校验</title>
+    <url>/2016/04/07/SpringMVC%E6%95%B0%E6%8D%AE%E7%BB%91%E5%AE%9A%E6%A0%A1%E9%AA%8C/</url>
+    <content><![CDATA[<blockquote>
+<p>在使用springMVC与前端小伙伴对接开发时，最日常的工作莫过于收参、数据绑定、校验等繁琐的工作。springMVC自身提供了较好的支持，这里简单记录，查漏补缺。</p>
+</blockquote>
+<span id="more"></span>
+
+<h2 id="1-注解数据绑定"><a href="#1-注解数据绑定" class="headerlink" title="1.注解数据绑定"></a>1.注解数据绑定</h2><h3 id="1-1-RequestParam"><a href="#1-1-RequestParam" class="headerlink" title="1.1.RequestParam"></a>1.1.RequestParam</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">@RequestMapping(&quot;/get1&quot;)</span><br><span class="line">public String get1(@RequestParam(value=&quot;p1&quot;, required=true, defaultValue = &quot;test&quot;)String p1,ModelMap map)&#123;</span><br><span class="line">	map.put(&quot;p1&quot;, p1);</span><br><span class="line">	return &quot;&quot;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><em>required: 是否必须，默认为true，表示请求中一定要有相应的参数，否则将报404错误码</em><br><em>defaultValue: 默认值，表示如果请求中没有同名参数时的默认值，一般分页参数可以这样设计</em></p>
+<p><em>如果请求参数类似于url?role&#x3D;admin&amp;role&#x3D;user，则实际roleList参数入参的数据为“admin,user”，即多个数据之间使用“，”分割；</em></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">@RequestMapping(&quot;/get1&quot;)</span><br><span class="line">public String get1(@RequestParam(value=&quot;role&quot;) String[] roleList)&#123;</span><br><span class="line">	return &quot;&quot;;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">@RequestMapping(&quot;/get1&quot;)</span><br><span class="line">public String get1(@RequestParam(value=&quot;list&quot;) List&lt;String&gt; list)&#123;</span><br><span class="line">	return &quot;&quot;;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+<h3 id="1-2-PathVariable"><a href="#1-2-PathVariable" class="headerlink" title="1.2.PathVariable"></a>1.2.PathVariable</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">@RequestMapping(&quot;/get2/detail/&#123;userId&#125;&quot;)</span><br><span class="line">public String get2(@PathVariable(value=&quot;userId&quot;) String userId)&#123;</span><br><span class="line">	return &quot;&quot;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="1-3-ModelAttribute"><a href="#1-3-ModelAttribute" class="headerlink" title="1.3.ModelAttribute"></a>1.3.ModelAttribute</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">@RequestMapping(&quot;/get3&quot;)</span><br><span class="line">public String get3(@ModelAttribute(&quot;user&quot;) UserVO user)&#123;</span><br><span class="line">	return &quot;&quot;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><em>只是此处多了一个注解<code>@ModelAttribute(&quot;user&quot;)</code>，它的作用是将该绑定的命令对象以“user”为名称添加到模型对象中供视图页面展示使用。我们此时可以在视图页面使用<code>$&#123;user.username&#125;</code>来获取绑定的命令对象的属性</em></p>
+<h3 id="1-4-CookieValue"><a href="#1-4-CookieValue" class="headerlink" title="1.4.CookieValue"></a>1.4.CookieValue</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">@RequestMapping(&quot;/get4&quot;)</span><br><span class="line">public String get4(@CookieValue(value=&quot;JSESSIONID&quot;, defaultValue=&quot;&quot;) String sessionId)&#123;</span><br><span class="line">	return &quot;&quot;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="1-5-RequestHeader"><a href="#1-5-RequestHeader" class="headerlink" title="1.5.RequestHeader"></a>1.5.RequestHeader</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">@RequestMapping(&quot;/get5&quot;)</span><br><span class="line">public String get5(@RequestHeader(&quot;User-Agent&quot;) String userAgent)&#123;</span><br><span class="line">	return &quot;&quot;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-数据校验"><a href="#2-数据校验" class="headerlink" title="2.数据校验"></a>2.数据校验</h2><h3 id="2-1-validator接口验证"><a href="#2-1-validator接口验证" class="headerlink" title="2.1.validator接口验证"></a>2.1.validator接口验证</h3><ul>
+<li><p>VO对象</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">public class UserVO2 &#123;</span><br><span class="line"></span><br><span class="line">	private String name;</span><br><span class="line">	</span><br><span class="line">	private String password;</span><br><span class="line">	</span><br><span class="line">	private String email;</span><br><span class="line">	</span><br><span class="line">	private String phone;</span><br><span class="line">	</span><br><span class="line">	private Integer age;</span><br><span class="line">	</span><br><span class="line">	private String desc;</span><br><span class="line">	</span><br><span class="line">	</span><br><span class="line">	//getter and setter....</span><br><span class="line">	</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>实现Spring的validator接口</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">public class UserValidator implements Validator &#123;</span><br><span class="line"></span><br><span class="line">	@Override</span><br><span class="line">	public boolean supports(Class&lt;?&gt; clazz) &#123;</span><br><span class="line">		return clazz.equals(UserVO2.class);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	@Override</span><br><span class="line">	public void validate(Object target, Errors errors) &#123;</span><br><span class="line">		ValidationUtils.rejectIfEmpty(errors, &quot;name&quot;, &quot;name.null&quot;,&quot;用户名不能为空&quot;);</span><br><span class="line">		ValidationUtils.rejectIfEmpty(errors, &quot;password&quot;, &quot;password.null&quot;, &quot;密码不能为空&quot;);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>在controller中设置validator验证器，并进行业务校验</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">@InitBinder  </span><br><span class="line">protected void initBinder(WebDataBinder binder)&#123;  </span><br><span class="line">	binder.setValidator(new UserValidator());  </span><br><span class="line">&#125;  </span><br><span class="line"></span><br><span class="line"></span><br><span class="line">@ResponseBody</span><br><span class="line">@RequestMapping (value = &quot;/reg2&quot;,  produces = &quot;text/html;charset=UTF-8&quot;)  </span><br><span class="line">public String doReg2(@Validated UserVO2 user, BindingResult result)&#123;</span><br><span class="line">	if(result.hasErrors())&#123;</span><br><span class="line">		String msg = result.getFieldErrors().get(0).getDefaultMessage();</span><br><span class="line">		return msg;</span><br><span class="line">	&#125;</span><br><span class="line">	return &quot;success&quot;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="2-2-JSR-303-validation验证"><a href="#2-2-JSR-303-validation验证" class="headerlink" title="2.2.JSR-303 validation验证"></a>2.2.JSR-303 validation验证</h3><p>在Spring3.1中增加的了对JSR303 Bean Validation规范的支持，不仅可以对Spring的 MVC进行校验，而且也可以对Hibernate的存储对象进行校验。是一个通用的校验框架。</p>
+<ul>
+<li><p>VO对象</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">public class UserVO &#123;</span><br><span class="line"></span><br><span class="line">	@NotBlank(message=&quot;用户姓名不能为空&quot;)</span><br><span class="line">	@Size (min=3, max=20, message=&quot;用户名长度只能在3-20之间&quot;)</span><br><span class="line">	private String name;</span><br><span class="line">	</span><br><span class="line">	@NotBlank(message =&quot;用户密码不能为空&quot;)</span><br><span class="line">	@Size (min=6, max=20, message=&quot;密码长度只能在6-20之间&quot;) </span><br><span class="line">	private String password;</span><br><span class="line">	</span><br><span class="line">	@Email(message=&quot;邮箱格式不正确&quot;)</span><br><span class="line">	private String email;</span><br><span class="line">	</span><br><span class="line">	@Pattern (regexp=&quot;^[1][3,4,5,7,8][0-9]&#123;9&#125;$&quot;, message=&quot;手机格式错误&quot;)  </span><br><span class="line">	private String phone;</span><br><span class="line">		</span><br><span class="line">	private Double salary;  </span><br><span class="line">	</span><br><span class="line">	private Integer age;</span><br><span class="line">	</span><br><span class="line">	private String desc;</span><br><span class="line"></span><br><span class="line">	public String getName() &#123;</span><br><span class="line">		return name;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	public void setName(String name) &#123;</span><br><span class="line">		this.name = name;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	public String getPassword() &#123;</span><br><span class="line">		return password;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	public void setPassword(String password) &#123;</span><br><span class="line">		this.password = password;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	public String getEmail() &#123;</span><br><span class="line">		return email;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	public void setEmail(String email) &#123;</span><br><span class="line">		this.email = email;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	public String getPhone() &#123;</span><br><span class="line">		return phone;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	public void setPhone(String phone) &#123;</span><br><span class="line">		this.phone = phone;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	public Integer getAge() &#123;</span><br><span class="line">		return age;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	public void setAge(Integer age) &#123;</span><br><span class="line">		this.age = age;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	public String getDesc() &#123;</span><br><span class="line">		return desc;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	public void setDesc(String desc) &#123;</span><br><span class="line">		this.desc = desc;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	@Money(message=&quot;标准的金额形式为xxx.xx&quot;)</span><br><span class="line">	public Double getSalary() &#123;</span><br><span class="line">		return salary;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	public void setSalary(Double salary) &#123;</span><br><span class="line">		this.salary = salary;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>自定义注解</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">@Target(&#123;ElementType.FIELD,ElementType.METHOD&#125;)</span><br><span class="line">@Retention(RetentionPolicy.RUNTIME)</span><br><span class="line">@Constraint(validatedBy=MoneyValidator.class)</span><br><span class="line">public @interface Money &#123;</span><br><span class="line"></span><br><span class="line">	String message() default &quot;不是金额形式&quot;; </span><br><span class="line">	</span><br><span class="line">	Class&lt;?&gt;[] groups() default &#123;&#125;;  </span><br><span class="line"></span><br><span class="line">	Class&lt;? extends Payload&gt;[] payload() default &#123;&#125;;  </span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>validator实现</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">public class MoneyValidator implements ConstraintValidator&lt;Money, Double&gt; &#123;</span><br><span class="line">	</span><br><span class="line">	private String moneyReg = &quot;^\\d+(\\.\\d&#123;1,2&#125;)?$&quot;;//表示金额的正则表达式 </span><br><span class="line">	private Pattern moneyPattern = Pattern.compile(moneyReg);  </span><br><span class="line"></span><br><span class="line">	@Override</span><br><span class="line">	public void initialize(Money money) &#123;</span><br><span class="line">		</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	@Override</span><br><span class="line">	public boolean isValid(Double value, ConstraintValidatorContext context) &#123;</span><br><span class="line">		if (value == null)&#123;</span><br><span class="line">			return true;  </span><br><span class="line">		&#125;</span><br><span class="line">	    return moneyPattern.matcher(value.toString()).matches();  </span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>在controller中进行业务校验</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">@ResponseBody</span><br><span class="line">@RequestMapping (value = &quot;/reg&quot;,  produces = &quot;text/html;charset=UTF-8&quot;)  </span><br><span class="line">public String doReg(@Valid UserVO user, BindingResult result)&#123;</span><br><span class="line">	if(result.hasErrors())&#123;</span><br><span class="line">		String msg = result.getFieldErrors().get(0).getDefaultMessage();</span><br><span class="line">		return msg;</span><br><span class="line">	&#125;</span><br><span class="line">	return &quot;success&quot;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a href="http://haohaoxuexi.iteye.com/blog/1812584">http://haohaoxuexi.iteye.com/blog/1812584</a></li>
+<li><a href="http://blog.csdn.net/walkerjong/article/details/7210727">http://blog.csdn.net/walkerjong/article/details/7210727</a></li>
+<li><a href="http://jinnianshilongnian.iteye.com/blog/1705701">http://jinnianshilongnian.iteye.com/blog/1705701</a></li>
+</ul>
+]]></content>
+      <tags>
+        <tag>springMVC</tag>
+        <tag>数据绑定</tag>
+        <tag>参数校验</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Linux初始化工作</title>
+    <url>/2015/05/24/Linux%E5%88%9D%E5%A7%8B%E5%8C%96%E5%B7%A5%E4%BD%9C/</url>
+    <content><![CDATA[<h1 id="用户管理"><a href="#用户管理" class="headerlink" title="用户管理"></a>用户管理</h1><h2 id="建用户"><a href="#建用户" class="headerlink" title="建用户"></a>建用户</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">adduser username</span><br><span class="line">passwd username</span><br></pre></td></tr></table></figure>
+
+<h2 id="将新建用户添加至wheel组"><a href="#将新建用户添加至wheel组" class="headerlink" title="将新建用户添加至wheel组"></a>将新建用户添加至wheel组</h2><ul>
+<li>root登录，修改 <code>/etc/pam.d/su</code> 文件，找到<code>#auth required pam_wheel.so use_uid</code>这一行，将行首的<code>#</code>去掉。</li>
+<li>执行<code>usermod -G wheel username</code></li>
+</ul>
+<h2 id="配置新建用户可使用sudo命令"><a href="#配置新建用户可使用sudo命令" class="headerlink" title="配置新建用户可使用sudo命令"></a>配置新建用户可使用<code>sudo</code>命令</h2><ul>
+<li>执行<code>#vim /etc/sudoers</code></li>
+<li>找到<code>root    ALL=(ALL)       ALL</code>，复制一行，将root修改为username</li>
+</ul>
+<span id="more"></span>
+
+<h2 id="删除不需要的用户，不需要的组"><a href="#删除不需要的用户，不需要的组" class="headerlink" title="删除不需要的用户，不需要的组"></a>删除不需要的用户，不需要的组</h2><blockquote>
+<p>注意：不建议直接删除，当你需要某个用户时，自己重新添加会很麻烦。</p>
+</blockquote>
+<ul>
+<li><code>cp /etc/passwd /etc/passwdbak</code> #修改之前先备份</li>
+<li><code>vi /etc/passwd</code> #编辑用户，在前面加上#注释掉此行</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#adm:x:3:4:adm:/var/adm:/sbin/nologin</span><br><span class="line">#lp:x:4:7:lp:/var/spool/lpd:/sbin/nologin</span><br><span class="line">#sync:x:5:0:sync:/sbin:/bin/sync</span><br><span class="line">#shutdown:x:6:0:shutdown:/sbin:/sbin/shutdown</span><br><span class="line">#halt:x:7:0:halt:/sbin:/sbin/halt</span><br><span class="line">#uucp:x:10:14:uucp:/var/spool/uucp:/sbin/nologin</span><br><span class="line">#operator:x:11:0:operator:/root:/sbin/nologin</span><br><span class="line">#games:x:12:100:games:/usr/games:/sbin/nologin</span><br><span class="line">#gopher:x:13:30:gopher:/var/gopher:/sbin/nologin</span><br><span class="line">#ftp:x:14:50:FTP User:/var/ftp:/sbin/nologin #注释掉ftp匿名账号</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>cp /etc/group /etc/groupbak</code> #修改之前先备份</li>
+<li><code>vi /etc/group</code> #编辑用户组，在前面加上#注释掉此行</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#adm:x:4:root,adm,daemon</span><br><span class="line">#lp:x:7:daemon,lp</span><br><span class="line">#uucp:x:14:uucp</span><br><span class="line">#games:x:20:</span><br><span class="line">#dip:x:40:</span><br><span class="line">#news:x:9:13:news:/etc/news:</span><br></pre></td></tr></table></figure>
+
+
+<h1 id="修改SSH连接"><a href="#修改SSH连接" class="headerlink" title="修改SSH连接"></a>修改SSH连接</h1><blockquote>
+<p>出于安全考虑，SSH服务配置做以下方面修改</p>
+</blockquote>
+<ul>
+<li>修改端口</li>
+<li>禁止root用户登陆</li>
+<li>支持密钥登陆</li>
+<li>禁用密码登陆</li>
+</ul>
+<p>编辑&#x2F;etc&#x2F;ssh&#x2F;sshd_config文件</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Port 22 #自己定义一个端口</span><br><span class="line">HostKey /etc/ssh/ssh_host_dsa_key #支持密钥登陆</span><br><span class="line">PermitRootLogin no # 禁用root登陆</span><br><span class="line">StrictModes yes # 采用putty等客户端登陆需要改成no</span><br><span class="line">RSAAuthentication yes</span><br><span class="line">PubkeyAuthentication yes</span><br><span class="line">AuthorizedKeysFile      .ssh/authorized_keys</span><br><span class="line">PasswordAuthentication no # 禁用密码登陆</span><br></pre></td></tr></table></figure>
+
+<p>调用<code>ssh-keygen -t rsa</code>生成密钥对，将公钥上id_rsa.pub上传至服务器<code>~/.ssh</code>目录，然后执行<code>cat id_rsa.pub &gt;&gt; authorized_keys</code></p>
+<blockquote>
+<p>注意，操作完成后，新开一个连接检测是否配置正常，不要关闭当前连接，否则你可能永远都连不上你的服务器了。。。。</p>
+</blockquote>
+<h1 id="防火墙设置"><a href="#防火墙设置" class="headerlink" title="防火墙设置"></a>防火墙设置</h1><h2 id="禁止ping"><a href="#禁止ping" class="headerlink" title="禁止ping"></a>禁止ping</h2><ul>
+<li>如果没有iptables禁止ping</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">echo 1 &amp;gt; /proc/sys/net/ipv4/icmp_echo_igore_all #开启</span><br><span class="line">echo 0 &amp;gt; /proc/sys/net/ipv4/icmp_echo_igore_all #关闭</span><br></pre></td></tr></table></figure>
+<ul>
+<li>利用iptables规则禁ping</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">iptables -A INPUT -p icmp --icmp-type 8 -s 0/0 -j DROP</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p> 注意保存<code>service iptables save</code>和重启服务<code>service iptables reload</code></p>
+</blockquote>
+<h1 id="关闭selinux"><a href="#关闭selinux" class="headerlink" title="关闭selinux"></a>关闭selinux</h1><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/usr/sbin/setenforce 0  # 0立刻关闭 1立刻启用</span><br><span class="line">echo &quot;/usr/sbin/setenforce 0&quot; &gt;&gt; /etc/rc.local # 加到系统默认启动里面</span><br></pre></td></tr></table></figure>
+<h1 id="关掉不必要的服务"><a href="#关掉不必要的服务" class="headerlink" title="关掉不必要的服务"></a>关掉不必要的服务</h1><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">chkconfig --list # 查看系统所有的服务是打开还是关闭</span><br><span class="line">chkconfig 服务名 on # 设置随机启动</span><br><span class="line">chkconfig 服务名 off # 设置不随机启动</span><br></pre></td></tr></table></figure>
+<h1 id="修改系统参数"><a href="#修改系统参数" class="headerlink" title="修改系统参数"></a>修改系统参数</h1><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cat&gt;&gt;/etc/sysctl.conf&lt;&lt;eof</span><br><span class="line">     net.ipv4.tcp_syncookies = 1</span><br><span class="line">     net.ipv4.tcp_tw_reuse = 1</span><br><span class="line">     net.ipv4.tcp_tw_recycle = 1</span><br><span class="line">     net.ipv4.tcp_fin_timeout = 30</span><br><span class="line">     net.ipv4.tcp_keepalive_time = 120</span><br><span class="line">     net.ipv4.ip_local_port_range = 10000 65000</span><br><span class="line">     net.ipv4.tcp_max_tw_buckets = 8000</span><br><span class="line">   eof</span><br><span class="line">   sysctl -p</span><br><span class="line"></span><br><span class="line">   ulimit -HSn 65535</span><br><span class="line">   echo -ne &quot;</span><br><span class="line">   * soft nofile 65535</span><br><span class="line">   * hard nofile 65535</span><br><span class="line">   &quot; &gt;&gt;/etc/security/limits.conf</span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <tags>
+        <tag>Linux</tag>
+        <tag>ssh</tag>
+        <tag>iptables</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Linux远程管理工具介绍</title>
+    <url>/2015/03/09/Linux%E8%BF%9C%E7%A8%8B%E7%AE%A1%E7%90%86%E5%B7%A5%E5%85%B7%E4%BB%8B%E7%BB%8D/</url>
+    <content><![CDATA[<h1 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h1><p>在Linux下工作也有两年多了，在平常工作中，也会将自己的一些经验传授给新人，正所谓“教是最好的学”，在此过程中，我可以把自己所学进一步提炼，使其系统化。<br>本人怀着敬畏之心，本着班门弄斧的态度，写下这些文字的。大牛请跳过，让您见笑了，戝笑～</p>
+<blockquote>
+<p><strong>本文整理的是Linux终端操作和文件传输相关工具介绍，远程桌面不在讨论范围</strong></p>
+</blockquote>
+<span id="more"></span>
+
+<h1 id="管理工具介绍"><a href="#管理工具介绍" class="headerlink" title="管理工具介绍"></a>管理工具介绍</h1><h2 id="SecureCRT"><a href="#SecureCRT" class="headerlink" title="SecureCRT"></a>SecureCRT</h2><p><a href="http://zh.wikipedia.org/wiki/SecureCRT">SecureCRT</a>是VanDyke Software的一个商业SSH、Telnet客户端和虚拟终端软件。SecureCRT最初是一个Windows下的产品，目前VanDyke增加了Mac OS X和Linux下的版本。</p>
+<h3 id="版本介绍"><a href="#版本介绍" class="headerlink" title="版本介绍"></a>版本介绍</h3><ul>
+<li>windows版本</li>
+</ul>
+<p><img src="http://www.vandyke.com/images/screenshots/securecrt/scrt70win_tabs.jpg"></p>
+<ul>
+<li>Linux版本</li>
+</ul>
+<p><img src="http://www.vandyke.com/images/screenshots/securecrt/securecrt70tabsess.jpg"></p>
+<ul>
+<li>Mac版本</li>
+</ul>
+<p><img src="http://www.vandyke.com/images/screenshots/securecrt/scrt70mac_tabs.jpg"></p>
+<ul>
+<li>Ipad版本</li>
+</ul>
+<p><img src="http://www.vandyke.com/images/screenshots/ipad/mc01.jpg"></p>
+<h3 id="文件传输"><a href="#文件传输" class="headerlink" title="文件传输"></a>文件传输</h3><ul>
+<li>z-modem rz&#x2F;sz</li>
+</ul>
+<p><code>rz</code>  : 将服务器端选择的文件发送（send）到本地。</p>
+<p><code>sz</code> :  运行该命令会弹出一个文件选择窗口，从本地选择文件上传到服务器。</p>
+<p>__ 若命令无法执行，一般情况为服务器不支持z-modem，需要安装<code>rzsz</code>，具体安装方法自行Google.__</p>
+<ul>
+<li>scp</li>
+</ul>
+<p>本地文件上传到服务器</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">scp local_file user@remoteIP:remote_file</span><br></pre></td></tr></table></figure>
+
+<p>本地目录上传到服务器</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">scp -r local_folder user@remoteIP:remote_folder</span><br></pre></td></tr></table></figure>
+
+<p>服务器文件下载到本地</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">scp usr@remoteIP:remote_file local_file</span><br></pre></td></tr></table></figure>
+
+<p>服务器目录下载到本地</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">scp -r user@remoteIP:remote_folder local_folder</span><br></pre></td></tr></table></figure>
+
+<p><strong>如果服务器端口有变化，用<code>-P port</code>进行指定。</strong></p>
+<ul>
+<li>sftp</li>
+</ul>
+<p><a href="http://zh.wikipedia.org/wiki/SSH%E6%96%87%E4%BB%B6%E4%BC%A0%E8%BE%93%E5%8D%8F%E8%AE%AE">sftp</a>是基于SSH的一组传输协议。<br>在SecureCRT中按下快捷键<code>ALT+P</code>，开启新的会话，进入FTP操作模式。</p>
+<p>本地文件上传到服务器</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">put local_file </span><br></pre></td></tr></table></figure>
+
+<p>本地文件目录上传到服务器</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">put -r local_folder</span><br></pre></td></tr></table></figure>
+
+<p>服务器目录下载到本地</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">get remote_file</span><br></pre></td></tr></table></figure>
+
+<p>服务器文件目录下载到本地</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">get -r remote_folder</span><br></pre></td></tr></table></figure>
+
+<p><strong>相关命令详细使用方法请查看帮助文档。</strong></p>
+<h2 id="XManager套装"><a href="#XManager套装" class="headerlink" title="XManager套装"></a>XManager套装</h2><p><a href="http://www.netsarang.com/">XManager</a>套装中，常用工具主要包括Xshell和Xftp。</p>
+<h3 id="版本介绍-1"><a href="#版本介绍-1" class="headerlink" title="版本介绍"></a>版本介绍</h3><ul>
+<li>Xshell</li>
+</ul>
+<p><img src="http://zhanggz.qiniudn.com/xshell.jpg"></p>
+<ul>
+<li>Xftp</li>
+</ul>
+<p><img src="http://zhanggz.qiniudn.com/xftp.jpg"></p>
+<h3 id="文件传输-1"><a href="#文件传输-1" class="headerlink" title="文件传输"></a>文件传输</h3><ul>
+<li>z-modem rz&#x2F;sz</li>
+</ul>
+<p>参考SecureCRT此功能相关介绍。</p>
+<ul>
+<li>scp</li>
+</ul>
+<p>参考SecureCRT此功能相关介绍。</p>
+<ul>
+<li>xftp</li>
+</ul>
+<p>此功能使用Xftp工具，可实现鼠标拖拽，不用写命令，比较方便。</p>
+<h2 id="Putty"><a href="#Putty" class="headerlink" title="Putty"></a>Putty</h2><p><a href="http://putty.cs.utah.edu/">Putty</a>是一个免费的telnet、rlogin和ssh客户端。<br><img src="http://www.putty.ws/sites/all/themes/putty/images/01.gif"></p>
+<h3 id="文件传输-2"><a href="#文件传输-2" class="headerlink" title="文件传输"></a>文件传输</h3><ul>
+<li>z-modem rz&#x2F;sz</li>
+</ul>
+<p><strong>不支持</strong></p>
+<ul>
+<li>scp</li>
+</ul>
+<p>参考SecureCRT此功能相关介绍。</p>
+<ul>
+<li>xftp</li>
+</ul>
+<p>此功能需要在putty的安装目录下，单独运行psftp工具，相关操作命令，参考SecureCRT此功能相关介绍。</p>
+<h2 id="比较"><a href="#比较" class="headerlink" title="比较"></a>比较</h2><p> 一般linux初学者，可能会在windows下虚拟一个Linux系统供自己学习，从这一点考虑，我会倾向于推荐Xshell+Xftp。土壕可以考虑SecureCRT，当然你可以说破解版有的是，我只想说，程序员何苦为难程序员。如果你的工作环境有Linux和Windos，putty会是不错的选择，本人目前使用putty，有时直接在shell里用原生的SSH命令，也是挺爽的～<br>  详细请参考<a href="http://zh.wikipedia.org/wiki/SSH%E5%AE%A2%E6%88%B7%E7%AB%AF%E6%AF%94%E8%BE%83">SSH工具比较</a></p>
+<h1 id="Linux终端利器－tmux"><a href="#Linux终端利器－tmux" class="headerlink" title="Linux终端利器－tmux"></a>Linux终端利器－tmux</h1><blockquote>
+<p>我们大多数情况下，Linux是作为服务器使用，我们远程过去，配置，部署，监控，分析，必要时候需要多窗口操作。当然&gt;SecureCRT，Xshell等工具都支持tab窗口，Putty也可以通过插件实现。我在这里再提供一种选择，终端分屏软件，直接上图，有兴趣的自行Google。</p>
+</blockquote>
+<h2 id=""><a href="#" class="headerlink" title="
+  "></a><img src="http://zhanggz.qiniudn.com/tmux.jpg">
+  </h2><p><strong>文章转载请注明作者和出处</strong></p>
+]]></content>
+      <tags>
+        <tag>Linux</tag>
+        <tag>ssh</tag>
+        <tag>tmux</tag>
+        <tag>SecureCRT</tag>
+        <tag>xshell</tag>
+        <tag>putty</tag>
+      </tags>
+  </entry>
+</search>
