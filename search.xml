@@ -1,75 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>Linux初始化工作</title>
-    <url>/2015/05/24/Linux%E5%88%9D%E5%A7%8B%E5%8C%96%E5%B7%A5%E4%BD%9C/</url>
-    <content><![CDATA[<h1 id="用户管理"><a href="#用户管理" class="headerlink" title="用户管理"></a>用户管理</h1><h2 id="建用户"><a href="#建用户" class="headerlink" title="建用户"></a>建用户</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">adduser username</span><br><span class="line">passwd username</span><br></pre></td></tr></table></figure>
-
-<h2 id="将新建用户添加至wheel组"><a href="#将新建用户添加至wheel组" class="headerlink" title="将新建用户添加至wheel组"></a>将新建用户添加至wheel组</h2><ul>
-<li>root登录，修改 <code>/etc/pam.d/su</code> 文件，找到<code>#auth required pam_wheel.so use_uid</code>这一行，将行首的<code>#</code>去掉。</li>
-<li>执行<code>usermod -G wheel username</code></li>
-</ul>
-<h2 id="配置新建用户可使用sudo命令"><a href="#配置新建用户可使用sudo命令" class="headerlink" title="配置新建用户可使用sudo命令"></a>配置新建用户可使用<code>sudo</code>命令</h2><ul>
-<li>执行<code>#vim /etc/sudoers</code></li>
-<li>找到<code>root    ALL=(ALL)       ALL</code>，复制一行，将root修改为username</li>
-</ul>
-<span id="more"></span>
-
-<h2 id="删除不需要的用户，不需要的组"><a href="#删除不需要的用户，不需要的组" class="headerlink" title="删除不需要的用户，不需要的组"></a>删除不需要的用户，不需要的组</h2><blockquote>
-<p>注意：不建议直接删除，当你需要某个用户时，自己重新添加会很麻烦。</p>
-</blockquote>
-<ul>
-<li><code>cp /etc/passwd /etc/passwdbak</code> #修改之前先备份</li>
-<li><code>vi /etc/passwd</code> #编辑用户，在前面加上#注释掉此行</li>
-</ul>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#adm:x:3:4:adm:/var/adm:/sbin/nologin</span><br><span class="line">#lp:x:4:7:lp:/var/spool/lpd:/sbin/nologin</span><br><span class="line">#sync:x:5:0:sync:/sbin:/bin/sync</span><br><span class="line">#shutdown:x:6:0:shutdown:/sbin:/sbin/shutdown</span><br><span class="line">#halt:x:7:0:halt:/sbin:/sbin/halt</span><br><span class="line">#uucp:x:10:14:uucp:/var/spool/uucp:/sbin/nologin</span><br><span class="line">#operator:x:11:0:operator:/root:/sbin/nologin</span><br><span class="line">#games:x:12:100:games:/usr/games:/sbin/nologin</span><br><span class="line">#gopher:x:13:30:gopher:/var/gopher:/sbin/nologin</span><br><span class="line">#ftp:x:14:50:FTP User:/var/ftp:/sbin/nologin #注释掉ftp匿名账号</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><code>cp /etc/group /etc/groupbak</code> #修改之前先备份</li>
-<li><code>vi /etc/group</code> #编辑用户组，在前面加上#注释掉此行</li>
-</ul>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#adm:x:4:root,adm,daemon</span><br><span class="line">#lp:x:7:daemon,lp</span><br><span class="line">#uucp:x:14:uucp</span><br><span class="line">#games:x:20:</span><br><span class="line">#dip:x:40:</span><br><span class="line">#news:x:9:13:news:/etc/news:</span><br></pre></td></tr></table></figure>
-
-
-<h1 id="修改SSH连接"><a href="#修改SSH连接" class="headerlink" title="修改SSH连接"></a>修改SSH连接</h1><blockquote>
-<p>出于安全考虑，SSH服务配置做以下方面修改</p>
-</blockquote>
-<ul>
-<li>修改端口</li>
-<li>禁止root用户登陆</li>
-<li>支持密钥登陆</li>
-<li>禁用密码登陆</li>
-</ul>
-<p>编辑&#x2F;etc&#x2F;ssh&#x2F;sshd_config文件</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Port 22 #自己定义一个端口</span><br><span class="line">HostKey /etc/ssh/ssh_host_dsa_key #支持密钥登陆</span><br><span class="line">PermitRootLogin no # 禁用root登陆</span><br><span class="line">StrictModes yes # 采用putty等客户端登陆需要改成no</span><br><span class="line">RSAAuthentication yes</span><br><span class="line">PubkeyAuthentication yes</span><br><span class="line">AuthorizedKeysFile      .ssh/authorized_keys</span><br><span class="line">PasswordAuthentication no # 禁用密码登陆</span><br></pre></td></tr></table></figure>
-
-<p>调用<code>ssh-keygen -t rsa</code>生成密钥对，将公钥上id_rsa.pub上传至服务器<code>~/.ssh</code>目录，然后执行<code>cat id_rsa.pub &gt;&gt; authorized_keys</code></p>
-<blockquote>
-<p>注意，操作完成后，新开一个连接检测是否配置正常，不要关闭当前连接，否则你可能永远都连不上你的服务器了。。。。</p>
-</blockquote>
-<h1 id="防火墙设置"><a href="#防火墙设置" class="headerlink" title="防火墙设置"></a>防火墙设置</h1><h2 id="禁止ping"><a href="#禁止ping" class="headerlink" title="禁止ping"></a>禁止ping</h2><ul>
-<li>如果没有iptables禁止ping</li>
-</ul>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">echo 1 &amp;gt; /proc/sys/net/ipv4/icmp_echo_igore_all #开启</span><br><span class="line">echo 0 &amp;gt; /proc/sys/net/ipv4/icmp_echo_igore_all #关闭</span><br></pre></td></tr></table></figure>
-<ul>
-<li>利用iptables规则禁ping</li>
-</ul>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">iptables -A INPUT -p icmp --icmp-type 8 -s 0/0 -j DROP</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p> 注意保存<code>service iptables save</code>和重启服务<code>service iptables reload</code></p>
-</blockquote>
-<h1 id="关闭selinux"><a href="#关闭selinux" class="headerlink" title="关闭selinux"></a>关闭selinux</h1><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/usr/sbin/setenforce 0  # 0立刻关闭 1立刻启用</span><br><span class="line">echo &quot;/usr/sbin/setenforce 0&quot; &gt;&gt; /etc/rc.local # 加到系统默认启动里面</span><br></pre></td></tr></table></figure>
-<h1 id="关掉不必要的服务"><a href="#关掉不必要的服务" class="headerlink" title="关掉不必要的服务"></a>关掉不必要的服务</h1><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">chkconfig --list # 查看系统所有的服务是打开还是关闭</span><br><span class="line">chkconfig 服务名 on # 设置随机启动</span><br><span class="line">chkconfig 服务名 off # 设置不随机启动</span><br></pre></td></tr></table></figure>
-<h1 id="修改系统参数"><a href="#修改系统参数" class="headerlink" title="修改系统参数"></a>修改系统参数</h1><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cat&gt;&gt;/etc/sysctl.conf&lt;&lt;eof</span><br><span class="line">     net.ipv4.tcp_syncookies = 1</span><br><span class="line">     net.ipv4.tcp_tw_reuse = 1</span><br><span class="line">     net.ipv4.tcp_tw_recycle = 1</span><br><span class="line">     net.ipv4.tcp_fin_timeout = 30</span><br><span class="line">     net.ipv4.tcp_keepalive_time = 120</span><br><span class="line">     net.ipv4.ip_local_port_range = 10000 65000</span><br><span class="line">     net.ipv4.tcp_max_tw_buckets = 8000</span><br><span class="line">   eof</span><br><span class="line">   sysctl -p</span><br><span class="line"></span><br><span class="line">   ulimit -HSn 65535</span><br><span class="line">   echo -ne &quot;</span><br><span class="line">   * soft nofile 65535</span><br><span class="line">   * hard nofile 65535</span><br><span class="line">   &quot; &gt;&gt;/etc/security/limits.conf</span><br></pre></td></tr></table></figure>
-
-]]></content>
-      <tags>
-        <tag>Linux</tag>
-        <tag>ssh</tag>
-        <tag>iptables</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Linux远程管理工具介绍</title>
     <url>/2015/03/09/Linux%E8%BF%9C%E7%A8%8B%E7%AE%A1%E7%90%86%E5%B7%A5%E5%85%B7%E4%BB%8B%E7%BB%8D/</url>
     <content><![CDATA[<h1 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h1><p>在Linux下工作也有两年多了，在平常工作中，也会将自己的一些经验传授给新人，正所谓“教是最好的学”，在此过程中，我可以把自己所学进一步提炼，使其系统化。<br>本人怀着敬畏之心，本着班门弄斧的态度，写下这些文字的。大牛请跳过，让您见笑了，戝笑～</p>
@@ -238,6 +169,75 @@
         <tag>springMVC</tag>
         <tag>数据绑定</tag>
         <tag>参数校验</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Linux初始化工作</title>
+    <url>/2015/05/24/Linux%E5%88%9D%E5%A7%8B%E5%8C%96%E5%B7%A5%E4%BD%9C/</url>
+    <content><![CDATA[<h1 id="用户管理"><a href="#用户管理" class="headerlink" title="用户管理"></a>用户管理</h1><h2 id="建用户"><a href="#建用户" class="headerlink" title="建用户"></a>建用户</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">adduser username</span><br><span class="line">passwd username</span><br></pre></td></tr></table></figure>
+
+<h2 id="将新建用户添加至wheel组"><a href="#将新建用户添加至wheel组" class="headerlink" title="将新建用户添加至wheel组"></a>将新建用户添加至wheel组</h2><ul>
+<li>root登录，修改 <code>/etc/pam.d/su</code> 文件，找到<code>#auth required pam_wheel.so use_uid</code>这一行，将行首的<code>#</code>去掉。</li>
+<li>执行<code>usermod -G wheel username</code></li>
+</ul>
+<h2 id="配置新建用户可使用sudo命令"><a href="#配置新建用户可使用sudo命令" class="headerlink" title="配置新建用户可使用sudo命令"></a>配置新建用户可使用<code>sudo</code>命令</h2><ul>
+<li>执行<code>#vim /etc/sudoers</code></li>
+<li>找到<code>root    ALL=(ALL)       ALL</code>，复制一行，将root修改为username</li>
+</ul>
+<span id="more"></span>
+
+<h2 id="删除不需要的用户，不需要的组"><a href="#删除不需要的用户，不需要的组" class="headerlink" title="删除不需要的用户，不需要的组"></a>删除不需要的用户，不需要的组</h2><blockquote>
+<p>注意：不建议直接删除，当你需要某个用户时，自己重新添加会很麻烦。</p>
+</blockquote>
+<ul>
+<li><code>cp /etc/passwd /etc/passwdbak</code> #修改之前先备份</li>
+<li><code>vi /etc/passwd</code> #编辑用户，在前面加上#注释掉此行</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#adm:x:3:4:adm:/var/adm:/sbin/nologin</span><br><span class="line">#lp:x:4:7:lp:/var/spool/lpd:/sbin/nologin</span><br><span class="line">#sync:x:5:0:sync:/sbin:/bin/sync</span><br><span class="line">#shutdown:x:6:0:shutdown:/sbin:/sbin/shutdown</span><br><span class="line">#halt:x:7:0:halt:/sbin:/sbin/halt</span><br><span class="line">#uucp:x:10:14:uucp:/var/spool/uucp:/sbin/nologin</span><br><span class="line">#operator:x:11:0:operator:/root:/sbin/nologin</span><br><span class="line">#games:x:12:100:games:/usr/games:/sbin/nologin</span><br><span class="line">#gopher:x:13:30:gopher:/var/gopher:/sbin/nologin</span><br><span class="line">#ftp:x:14:50:FTP User:/var/ftp:/sbin/nologin #注释掉ftp匿名账号</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>cp /etc/group /etc/groupbak</code> #修改之前先备份</li>
+<li><code>vi /etc/group</code> #编辑用户组，在前面加上#注释掉此行</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#adm:x:4:root,adm,daemon</span><br><span class="line">#lp:x:7:daemon,lp</span><br><span class="line">#uucp:x:14:uucp</span><br><span class="line">#games:x:20:</span><br><span class="line">#dip:x:40:</span><br><span class="line">#news:x:9:13:news:/etc/news:</span><br></pre></td></tr></table></figure>
+
+
+<h1 id="修改SSH连接"><a href="#修改SSH连接" class="headerlink" title="修改SSH连接"></a>修改SSH连接</h1><blockquote>
+<p>出于安全考虑，SSH服务配置做以下方面修改</p>
+</blockquote>
+<ul>
+<li>修改端口</li>
+<li>禁止root用户登陆</li>
+<li>支持密钥登陆</li>
+<li>禁用密码登陆</li>
+</ul>
+<p>编辑&#x2F;etc&#x2F;ssh&#x2F;sshd_config文件</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Port 22 #自己定义一个端口</span><br><span class="line">HostKey /etc/ssh/ssh_host_dsa_key #支持密钥登陆</span><br><span class="line">PermitRootLogin no # 禁用root登陆</span><br><span class="line">StrictModes yes # 采用putty等客户端登陆需要改成no</span><br><span class="line">RSAAuthentication yes</span><br><span class="line">PubkeyAuthentication yes</span><br><span class="line">AuthorizedKeysFile      .ssh/authorized_keys</span><br><span class="line">PasswordAuthentication no # 禁用密码登陆</span><br></pre></td></tr></table></figure>
+
+<p>调用<code>ssh-keygen -t rsa</code>生成密钥对，将公钥上id_rsa.pub上传至服务器<code>~/.ssh</code>目录，然后执行<code>cat id_rsa.pub &gt;&gt; authorized_keys</code></p>
+<blockquote>
+<p>注意，操作完成后，新开一个连接检测是否配置正常，不要关闭当前连接，否则你可能永远都连不上你的服务器了。。。。</p>
+</blockquote>
+<h1 id="防火墙设置"><a href="#防火墙设置" class="headerlink" title="防火墙设置"></a>防火墙设置</h1><h2 id="禁止ping"><a href="#禁止ping" class="headerlink" title="禁止ping"></a>禁止ping</h2><ul>
+<li>如果没有iptables禁止ping</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">echo 1 &amp;gt; /proc/sys/net/ipv4/icmp_echo_igore_all #开启</span><br><span class="line">echo 0 &amp;gt; /proc/sys/net/ipv4/icmp_echo_igore_all #关闭</span><br></pre></td></tr></table></figure>
+<ul>
+<li>利用iptables规则禁ping</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">iptables -A INPUT -p icmp --icmp-type 8 -s 0/0 -j DROP</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p> 注意保存<code>service iptables save</code>和重启服务<code>service iptables reload</code></p>
+</blockquote>
+<h1 id="关闭selinux"><a href="#关闭selinux" class="headerlink" title="关闭selinux"></a>关闭selinux</h1><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/usr/sbin/setenforce 0  # 0立刻关闭 1立刻启用</span><br><span class="line">echo &quot;/usr/sbin/setenforce 0&quot; &gt;&gt; /etc/rc.local # 加到系统默认启动里面</span><br></pre></td></tr></table></figure>
+<h1 id="关掉不必要的服务"><a href="#关掉不必要的服务" class="headerlink" title="关掉不必要的服务"></a>关掉不必要的服务</h1><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">chkconfig --list # 查看系统所有的服务是打开还是关闭</span><br><span class="line">chkconfig 服务名 on # 设置随机启动</span><br><span class="line">chkconfig 服务名 off # 设置不随机启动</span><br></pre></td></tr></table></figure>
+<h1 id="修改系统参数"><a href="#修改系统参数" class="headerlink" title="修改系统参数"></a>修改系统参数</h1><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cat&gt;&gt;/etc/sysctl.conf&lt;&lt;eof</span><br><span class="line">     net.ipv4.tcp_syncookies = 1</span><br><span class="line">     net.ipv4.tcp_tw_reuse = 1</span><br><span class="line">     net.ipv4.tcp_tw_recycle = 1</span><br><span class="line">     net.ipv4.tcp_fin_timeout = 30</span><br><span class="line">     net.ipv4.tcp_keepalive_time = 120</span><br><span class="line">     net.ipv4.ip_local_port_range = 10000 65000</span><br><span class="line">     net.ipv4.tcp_max_tw_buckets = 8000</span><br><span class="line">   eof</span><br><span class="line">   sysctl -p</span><br><span class="line"></span><br><span class="line">   ulimit -HSn 65535</span><br><span class="line">   echo -ne &quot;</span><br><span class="line">   * soft nofile 65535</span><br><span class="line">   * hard nofile 65535</span><br><span class="line">   &quot; &gt;&gt;/etc/security/limits.conf</span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <tags>
+        <tag>Linux</tag>
+        <tag>ssh</tag>
+        <tag>iptables</tag>
       </tags>
   </entry>
 </search>
